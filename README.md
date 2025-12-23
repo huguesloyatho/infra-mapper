@@ -25,27 +25,27 @@
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/graph.png" alt="Infrastructure Graph" width="100%">
+  <img src="screens/infra-map.png" alt="Infrastructure Graph" width="100%">
   <br><em>Vue graphe - Visualisation interactive de l'infrastructure avec connexions réseau</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/inventory.png" alt="Inventory View" width="100%">
+  <img src="screens/inventaire.png" alt="Inventory View" width="100%">
   <br><em>Inventaire - Vue détaillée des conteneurs par hôte avec statut et ports</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/metrics.png" alt="Metrics Dashboard" width="100%">
+  <img src="screens/metriques.png" alt="Metrics Dashboard" width="100%">
   <br><em>Métriques - Monitoring CPU, RAM, Disque en temps réel</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/logs.png" alt="Container Logs" width="100%">
+  <img src="screens/logs.png" alt="Container Logs" width="100%">
   <br><em>Logs - Consultation centralisée des logs de conteneurs</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/vms.png" alt="VM Management" width="100%">
+  <img src="screens/parametre.png" alt="VM Management" width="100%">
   <br><em>Gestion VMs - Déploiement et gestion des agents</em>
 </p>
 
