@@ -1,0 +1,25 @@
+# Docker Compose pour déployer l'agent sur un hôte distant
+# Usage: MAPPER_BACKEND_URL=http://your-server:8080 docker-compose -f docker-compose.agent.yml up -d
+
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    network_mode: host  # Nécessaire pour voir les connexions réseau de l'hôte
+    pid: host           # Nécessaire pour voir les processus
+    environment:
+      MAPPER_BACKEND_URL: ${MAPPER_BACKEND_URL:-http://localhost:8080}
+      MAPPER_API_KEY: ${MAPPER_API_KEY:-change-me-in-production}
+      MAPPER_SCAN_INTERVAL: ${MAPPER_SCAN_INTERVAL:-30}
+      MAPPER_LOG_LEVEL: ${MAPPER_LOG_LEVEL:-INFO}
+      MAPPER_TAILSCALE_ENABLED: ${MAPPER_TAILSCALE_ENABLED:-true}
+    volumes:
+      # Socket Docker pour accéder à l'API Docker
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Accès aux fichiers docker-compose
+      - /root:/root:ro
+      - /home:/home:ro
+      - /opt:/opt:ro
+      - /srv:/srv:ro
+      # Accès à Tailscale (si installé)
+      - /var/run/tailscale:/var/run/tailscale:ro

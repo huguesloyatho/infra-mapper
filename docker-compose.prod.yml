@@ -1,0 +1,140 @@
+# =============================================================================
+# Infra-Mapper - Configuration Docker Production
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Pre-requisites:
+#   1. Copy .env.example to .env and configure all values
+#   2. Generate SSH keys: ssh-keygen -t ed25519 -f ./ssh-keys/id_ed25519 -N ""
+#   3. Set proper permissions: chmod 600 ./ssh-keys/id_ed25519
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: infra-mapper-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${MAPPER_DB_USER}
+      POSTGRES_PASSWORD: ${MAPPER_DB_PASSWORD}
+      POSTGRES_DB: ${MAPPER_DB_NAME}
+      # Performance tuning for production
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MAPPER_DB_USER} -d ${MAPPER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - infra-mapper-net
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Backend API (FastAPI)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: infra-mapper-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      MAPPER_DB_HOST: postgres
+      MAPPER_DB_PORT: 5432
+      MAPPER_DB_NAME: ${MAPPER_DB_NAME}
+      MAPPER_DB_USER: ${MAPPER_DB_USER}
+      MAPPER_DB_PASSWORD: ${MAPPER_DB_PASSWORD}
+      # API Security
+      MAPPER_API_KEY: ${MAPPER_API_KEY}
+      MAPPER_SECRET_KEY: ${MAPPER_SECRET_KEY}
+      MAPPER_DEBUG: "false"
+      # Authentication
+      MAPPER_AUTH_ENABLED: ${MAPPER_AUTH_ENABLED:-true}
+      MAPPER_INITIAL_ADMIN_USERNAME: ${MAPPER_INITIAL_ADMIN_USERNAME:-admin}
+      MAPPER_INITIAL_ADMIN_PASSWORD: ${MAPPER_INITIAL_ADMIN_PASSWORD:-}
+      MAPPER_INITIAL_ADMIN_EMAIL: ${MAPPER_INITIAL_ADMIN_EMAIL:-admin@localhost}
+      # Security Headers & CORS
+      MAPPER_CORS_ORIGINS: ${MAPPER_CORS_ORIGINS:-["*"]}
+      MAPPER_SECURITY_HEADERS_ENABLED: "true"
+      MAPPER_TRUSTED_HOSTS: ${MAPPER_TRUSTED_HOSTS:-["*"]}
+      MAPPER_FORWARDED_ALLOW_IPS: ${MAPPER_FORWARDED_ALLOW_IPS:-*}
+      # Rate Limiting
+      MAPPER_RATE_LIMIT_ENABLED: "true"
+      MAPPER_RATE_LIMIT_REQUESTS: ${MAPPER_RATE_LIMIT_REQUESTS:-100}
+      MAPPER_RATE_LIMIT_WINDOW: ${MAPPER_RATE_LIMIT_WINDOW:-60}
+      # SSH for agent deployment
+      MAPPER_SSH_KEY_PATH: /root/.ssh/id_ed25519
+      MAPPER_BACKEND_URL: ${MAPPER_BACKEND_URL}
+    volumes:
+      # Agent source files for deployment
+      - ./agent:/app/agent:ro
+      # SSH keys for remote access (read-write to allow key generation from UI)
+      - ./ssh-keys:/root/.ssh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - infra-mapper-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Nginx + Vue.js)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: infra-mapper-frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${MAPPER_PORT:-8080}:80"
+    networks:
+      - infra-mapper-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  infra-mapper-net:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local

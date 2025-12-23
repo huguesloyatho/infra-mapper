@@ -1,0 +1,49 @@
+version: '3.8'
+
+# Docker Compose pour le développement local
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+
+services:
+  # Base de données PostgreSQL (dev)
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "5433:5432"  # Port différent pour éviter les conflits
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: infra_mapper
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (dev avec hot reload)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      MAPPER_DB_HOST: postgres
+      MAPPER_DB_PORT: 5432
+      MAPPER_DB_NAME: infra_mapper
+      MAPPER_DB_USER: postgres
+      MAPPER_DB_PASSWORD: postgres
+      MAPPER_API_KEY: dev-api-key
+      MAPPER_DEBUG: "true"
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_dev_data:

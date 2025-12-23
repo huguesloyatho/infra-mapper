@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MAPPER_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${MAPPER_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${MAPPER_DB_NAME:-infra_mapper}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MAPPER_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MAPPER_DB_HOST: postgres
+      MAPPER_DB_PORT: 5432
+      MAPPER_DB_NAME: ${MAPPER_DB_NAME:-infra_mapper}
+      MAPPER_DB_USER: ${MAPPER_DB_USER:-postgres}
+      MAPPER_DB_PASSWORD: ${MAPPER_DB_PASSWORD:-postgres}
+      MAPPER_API_KEY: ${MAPPER_API_KEY:-change-me-in-production}
+      MAPPER_DEBUG: ${MAPPER_DEBUG:-false}
+      MAPPER_SSH_KEY_PATH: /root/.ssh/id_ed25519
+      MAPPER_BACKEND_URL: ${MAPPER_BACKEND_URL:-http://localhost:8080}
+      # Authentication
+      MAPPER_AUTH_ENABLED: ${MAPPER_AUTH_ENABLED:-false}
+      MAPPER_SECRET_KEY: ${MAPPER_SECRET_KEY:-change-me-in-production-secret-key}
+    volumes:
+      # Agent source files for deployment
+      - ./agent:/app/agent:ro
+      # SSH keys for remote access
+      - ./ssh-keys:/root/.ssh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${MAPPER_PORT:-8080}:80"
+
+volumes:
+  postgres_data:

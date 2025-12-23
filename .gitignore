@@ -1,0 +1,99 @@
+# ==================================
+# Infra-Mapper .gitignore
+# ==================================
+
+# ========== Environment ==========
+.env
+.env.local
+.env.*.local
+*.env.local
+
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+*.whl
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# ========== Node.js ==========
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+*.tgz
+
+# ========== Build outputs ==========
+dist/
+build/
+*.egg
+frontend/dist/
+
+# ========== IDE ==========
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ========== OS ==========
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========== Docker ==========
+docker-compose.override.yml
+
+# ========== Data & Logs ==========
+postgres_data/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+
+# ========== SSH Keys ==========
+ssh-keys/id_*
+!ssh-keys/.gitkeep
+
+# ========== Secrets ==========
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+
+# ========== Test & Coverage ==========
+.coverage
+coverage/
+coverage.xml
+*.cover
+.hypothesis/
+nosetests.xml
+
+# ========== Backups ==========
+backups/
+*.bak
+*.backup
